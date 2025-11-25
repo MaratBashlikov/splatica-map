@@ -6,7 +6,6 @@ import SceneSidebar from '@/components/SceneSidebar'
 import SceneViewerModal from '@/components/SceneViewerModal'
 import { useScenes } from '@/hooks/useScenes'
 import { Scene } from '@/types/scene'
-import Link from 'next/link'
 
 export default function Home() {
   const { scenes, loading, error } = useScenes()
@@ -37,12 +36,6 @@ export default function Home() {
       ) : scenes.length === 0 ? (
         <div className="flex flex-col items-center justify-center w-full h-full text-white">
           <p className="text-xl mb-4">No scenes added yet</p>
-          <Link
-            href="/admin"
-            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium transition-colors"
-          >
-            Go to Admin Panel
-          </Link>
         </div>
       ) : (
         <>
@@ -70,16 +63,6 @@ export default function Home() {
           scene={viewerScene}
           onClose={() => setViewerScene(null)}
         />
-      )}
-
-      {/* Admin link (only in dev) */}
-      {process.env.NODE_ENV === 'development' && (
-        <Link
-          href="/admin"
-          className="fixed bottom-4 left-4 z-20 px-4 py-2 bg-gray-900/80 hover:bg-gray-800/90 text-white text-sm rounded-lg shadow-lg backdrop-blur-sm transition-colors"
-        >
-          Admin
-        </Link>
       )}
     </main>
   )

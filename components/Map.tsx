@@ -57,73 +57,81 @@ export default function Map({ scenes, onMarkerClick }: MapProps) {
 
     // Create custom markers for each scene
     scenes.forEach((scene) => {
-      // Create container that includes both marker and stem
-      // This ensures proper positioning at all zoom levels
-      const container = document.createElement('div')
-      container.style.width = '24px'
-      container.style.height = '32px'
-      container.style.position = 'relative'
-      container.style.cursor = 'pointer'
-      container.style.display = 'flex'
-      container.style.flexDirection = 'column'
-      container.style.alignItems = 'center'
-      container.style.justifyContent = 'flex-end'
-      container.style.pointerEvents = 'auto'
+      // Validate coordinates first
+      if (isNaN(scene.lat) || isNaN(scene.lng)) {
+        console.error('Invalid coordinates for scene:', scene.id, scene.lat, scene.lng)
+        return
+      }
 
-      // Create marker element
+      // Ensure coordinates are within valid ranges
+      const lat = Math.max(-90, Math.min(90, scene.lat))
+      const lng = Math.max(-180, Math.min(180, scene.lng))
+
+      // Create marker element - avoid position:relative as it can interfere with Mapbox positioning
       const el = document.createElement('div')
-      el.className = 'custom-marker'
       el.style.width = '24px'
-      el.style.height = '24px'
-      el.style.borderRadius = '50%'
-      el.style.backgroundColor = '#6366f1'
-      el.style.border = '3px solid #ffffff'
-      el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)'
-      el.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease'
-      el.style.flexShrink = '0'
-      el.style.position = 'relative'
+      el.style.height = '32px'
+      el.style.cursor = 'pointer'
       el.style.zIndex = '1'
+      // Don't use position:relative here - let Mapbox handle positioning
+
+      // Create the circular marker
+      const markerCircle = document.createElement('div')
+      markerCircle.style.width = '24px'
+      markerCircle.style.height = '24px'
+      markerCircle.style.borderRadius = '50%'
+      markerCircle.style.backgroundColor = '#6366f1'
+      markerCircle.style.border = '3px solid #ffffff'
+      markerCircle.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)'
+      markerCircle.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease'
+      markerCircle.style.marginBottom = '8px' // Space for stem
+      markerCircle.style.display = 'block'
+      markerCircle.style.marginLeft = 'auto'
+      markerCircle.style.marginRight = 'auto'
 
       // Add "stem" effect
       const stem = document.createElement('div')
       stem.style.width = '2px'
       stem.style.height = '8px'
       stem.style.backgroundColor = '#6366f1'
+      stem.style.marginLeft = 'auto'
+      stem.style.marginRight = 'auto'
+      stem.style.display = 'block'
       stem.style.pointerEvents = 'none'
-      stem.style.flexShrink = '0'
 
-      container.appendChild(el)
-      container.appendChild(stem)
+      el.appendChild(markerCircle)
+      el.appendChild(stem)
 
       // Hover effects
-      container.addEventListener('mouseenter', () => {
-        el.style.transform = 'scale(1.3)'
-        el.style.boxShadow = '0 4px 16px rgba(99, 102, 241, 0.6)'
-        container.style.zIndex = '1000'
+      el.addEventListener('mouseenter', () => {
+        markerCircle.style.transform = 'scale(1.3)'
+        markerCircle.style.boxShadow = '0 4px 16px rgba(99, 102, 241, 0.6)'
+        el.style.zIndex = '1000'
       })
 
-      container.addEventListener('mouseleave', () => {
-        el.style.transform = 'scale(1)'
-        el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)'
-        container.style.zIndex = '1'
+      el.addEventListener('mouseleave', () => {
+        markerCircle.style.transform = 'scale(1)'
+        markerCircle.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)'
+        el.style.zIndex = '1'
       })
 
       // Add thumbnail if available
       if (scene.thumbnailUrl) {
-        el.style.backgroundImage = `url(${scene.thumbnailUrl})`
-        el.style.backgroundSize = 'cover'
-        el.style.backgroundPosition = 'center'
+        markerCircle.style.backgroundImage = `url(${scene.thumbnailUrl})`
+        markerCircle.style.backgroundSize = 'cover'
+        markerCircle.style.backgroundPosition = 'center'
       }
 
-      // Create marker with bottom anchor - this pins the bottom of the container to coordinates
+      // Use bottom anchor - this ensures the bottom of the element (where stem ends) is at coordinates
+      // This is the most reliable method for positioning markers at all zoom levels
       const marker = new mapboxgl.Marker({
-        element: container,
+        element: el,
         anchor: 'bottom',
       })
-        .setLngLat([scene.lng, scene.lat])
+        .setLngLat([lng, lat])
         .addTo(map.current!)
 
-      container.addEventListener('click', () => {
+      el.addEventListener('click', () => {
         onMarkerClick(scene)
       })
 
@@ -131,25 +139,9 @@ export default function Map({ scenes, onMarkerClick }: MapProps) {
     })
   }, [scenes, isLoaded, onMarkerClick])
 
-  const resetView = () => {
-    if (map.current) {
-      map.current.flyTo({
-        center: [0, 20],
-        zoom: 2,
-        duration: 1000,
-      })
-    }
-  }
-
   return (
     <div className="relative w-full h-full">
       <div ref={mapContainer} className="w-full h-full" />
-      <button
-        onClick={resetView}
-        className="absolute top-4 right-4 z-10 px-4 py-2 bg-gray-900/80 hover:bg-gray-800/90 text-white rounded-lg shadow-lg backdrop-blur-sm transition-colors"
-      >
-        Reset View
-      </button>
     </div>
   )
 }
