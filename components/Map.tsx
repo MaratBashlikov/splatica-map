@@ -57,17 +57,20 @@ export default function Map({ scenes, onMarkerClick }: MapProps) {
 
     // Create custom markers for each scene
     scenes.forEach((scene) => {
-      // Outer container - this is what Mapbox positions
+      // Create container that includes both marker and stem
+      // This ensures proper positioning at all zoom levels
       const container = document.createElement('div')
-      container.style.position = 'relative'
       container.style.width = '24px'
       container.style.height = '32px'
+      container.style.position = 'relative'
       container.style.cursor = 'pointer'
       container.style.display = 'flex'
-      container.style.alignItems = 'flex-end'
-      container.style.justifyContent = 'center'
+      container.style.flexDirection = 'column'
+      container.style.alignItems = 'center'
+      container.style.justifyContent = 'flex-end'
+      container.style.pointerEvents = 'auto'
 
-      // Inner marker element - this can be transformed without affecting position
+      // Create marker element
       const el = document.createElement('div')
       el.className = 'custom-marker'
       el.style.width = '24px'
@@ -76,25 +79,23 @@ export default function Map({ scenes, onMarkerClick }: MapProps) {
       el.style.backgroundColor = '#6366f1'
       el.style.border = '3px solid #ffffff'
       el.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)'
-      el.style.transition = 'all 0.2s ease'
-      el.style.transformOrigin = 'center bottom'
+      el.style.transition = 'transform 0.2s ease, box-shadow 0.2s ease'
       el.style.flexShrink = '0'
+      el.style.position = 'relative'
+      el.style.zIndex = '1'
 
       // Add "stem" effect
       const stem = document.createElement('div')
-      stem.style.position = 'absolute'
-      stem.style.bottom = '0'
-      stem.style.left = '50%'
-      stem.style.transform = 'translateX(-50%)'
       stem.style.width = '2px'
       stem.style.height = '8px'
       stem.style.backgroundColor = '#6366f1'
       stem.style.pointerEvents = 'none'
-      container.appendChild(stem)
+      stem.style.flexShrink = '0'
 
       container.appendChild(el)
+      container.appendChild(stem)
 
-      // Hover effects - transform only the inner element
+      // Hover effects
       container.addEventListener('mouseenter', () => {
         el.style.transform = 'scale(1.3)'
         el.style.boxShadow = '0 4px 16px rgba(99, 102, 241, 0.6)'
@@ -114,7 +115,7 @@ export default function Map({ scenes, onMarkerClick }: MapProps) {
         el.style.backgroundPosition = 'center'
       }
 
-      // Create marker with anchor at bottom center to keep it pinned to coordinates
+      // Create marker with bottom anchor - this pins the bottom of the container to coordinates
       const marker = new mapboxgl.Marker({
         element: container,
         anchor: 'bottom',
