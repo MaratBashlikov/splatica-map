@@ -1,7 +1,7 @@
 'use client'
 
 import { Scene } from '@/types/scene'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 interface SceneViewerModalProps {
   scene: Scene | null
@@ -13,6 +13,13 @@ export default function SceneViewerModal({
   onClose,
 }: SceneViewerModalProps) {
   const [iframeError, setIframeError] = useState(false)
+  const [isVisible, setIsVisible] = useState(false)
+
+  useEffect(() => {
+    if (scene) {
+      setIsVisible(true)
+    }
+  }, [scene])
 
   if (!scene) return null
 
@@ -24,13 +31,30 @@ export default function SceneViewerModal({
     window.open(scene.splaticaUrl, '_blank')
   }
 
+  const handleClose = () => {
+    setIsVisible(false)
+    setTimeout(() => {
+      onClose()
+    }, 300)
+  }
+
   return (
-    <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4">
-      <div className="relative w-full h-full max-w-7xl max-h-[90vh] bg-gray-900 rounded-lg overflow-hidden">
+    <div 
+      className={`fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity duration-300 ${
+        isVisible ? 'opacity-100' : 'opacity-0'
+      }`}
+      onClick={handleClose}
+    >
+      <div 
+        className={`relative w-full h-full max-w-7xl max-h-[90vh] bg-white rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 ${
+          isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
+        }`}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Close button */}
         <button
-          onClick={onClose}
-          className="absolute top-4 right-4 z-10 text-white hover:text-gray-300 transition-colors bg-gray-900/80 rounded-full p-2"
+          onClick={handleClose}
+          className="absolute top-4 right-4 z-10 text-gray-600 hover:text-gray-900 transition-colors bg-white/90 hover:bg-white rounded-full p-2 shadow-lg backdrop-blur-sm"
         >
           <svg
             className="w-6 h-6"
@@ -49,14 +73,16 @@ export default function SceneViewerModal({
 
         {/* Iframe or fallback */}
         {iframeError ? (
-          <div className="flex flex-col items-center justify-center h-full text-white">
-            <p className="mb-4">Unable to load viewer in iframe</p>
-            <button
-              onClick={openInNewTab}
-              className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 rounded-lg font-medium transition-colors"
-            >
-              Open in New Tab
-            </button>
+          <div className="flex flex-col items-center justify-center h-full bg-gray-50">
+            <div className="text-center p-8">
+              <p className="text-gray-700 mb-6 text-lg">Unable to load viewer in iframe</p>
+              <button
+                onClick={openInNewTab}
+                className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+              >
+                Open in Splatica
+              </button>
+            </div>
           </div>
         ) : (
           <iframe

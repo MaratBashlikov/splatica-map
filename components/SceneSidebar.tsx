@@ -21,27 +21,27 @@ export default function SceneSidebar({ scene, onClose, onOpenViewer }: SceneSide
 
   return (
     <>
-      {/* Backdrop */}
+      {/* Backdrop - mobile only */}
       <div
-        className="fixed inset-0 bg-black/50 z-40 md:hidden"
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 md:hidden transition-opacity duration-300"
         onClick={onClose}
       />
 
-      {/* Sidebar */}
+      {/* Sidebar / Bottom Sheet */}
       <div
         className={`fixed ${
           scene
             ? 'right-0 md:right-0 bottom-0 md:bottom-auto'
-            : '-right-full md:-right-96'
-        } top-0 md:top-0 w-full md:w-96 h-[60vh] md:h-full bg-gray-900/95 backdrop-blur-lg z-50 shadow-2xl transition-transform duration-300 ease-out flex flex-col`}
+            : '-right-full md:-right-96 bottom-[-100%] md:bottom-auto'
+        } top-auto md:top-0 w-full md:w-96 h-[70vh] md:h-full bg-gray-900/95 backdrop-blur-xl z-50 shadow-2xl transition-all duration-300 ease-out flex flex-col rounded-t-2xl md:rounded-none`}
       >
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10"
+          className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-800/50"
         >
           <svg
-            className="w-6 h-6"
+            className="w-5 h-5"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -59,36 +59,36 @@ export default function SceneSidebar({ scene, onClose, onOpenViewer }: SceneSide
         <div className="flex-1 overflow-y-auto p-6 pt-12">
           {/* Thumbnail */}
           {scene.thumbnailUrl && (
-            <div className="mb-4 rounded-lg overflow-hidden">
+            <div className="mb-6 rounded-xl overflow-hidden shadow-xl">
               <img
                 src={scene.thumbnailUrl}
                 alt={scene.title}
-                className="w-full h-48 object-cover"
+                className="w-full h-56 object-cover"
               />
             </div>
           )}
 
           {/* Title */}
-          <h2 className="text-2xl font-bold text-white mb-2">{scene.title}</h2>
+          <h2 className="text-2xl font-bold text-white mb-3">{scene.title}</h2>
 
           {/* Description */}
           {scene.description && (
-            <p className="text-gray-300 mb-4">{scene.description}</p>
+            <p className="text-gray-300 mb-6 leading-relaxed">{scene.description}</p>
           )}
 
           {/* Coordinates */}
-          <div className="text-sm text-gray-400 mb-6">
+          <div className="text-sm text-gray-500 mb-8">
             <p>
-              Coordinates: {scene.lat.toFixed(4)}, {scene.lng.toFixed(4)}
+              {scene.lat.toFixed(4)}, {scene.lng.toFixed(4)}
             </p>
           </div>
 
-          {/* Open button */}
+          {/* Open button with gradient */}
           <button
             onClick={handleOpenViewer}
-            className="w-full px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors"
+            className="w-full px-6 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
           >
-            Open in Viewer
+            Open in Splatica Viewer
           </button>
         </div>
       </div>

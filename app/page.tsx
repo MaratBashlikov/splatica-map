@@ -11,9 +11,11 @@ export default function Home() {
   const { scenes, loading, error } = useScenes()
   const [selectedScene, setSelectedScene] = useState<Scene | null>(null)
   const [viewerScene, setViewerScene] = useState<Scene | null>(null)
+  const [selectedMarkerId, setSelectedMarkerId] = useState<string | null>(null)
 
   const handleMarkerClick = (scene: Scene) => {
     // Open viewer directly when clicking on marker
+    setSelectedMarkerId(scene.id)
     setViewerScene(scene)
     setSelectedScene(null)
   }
@@ -21,6 +23,11 @@ export default function Home() {
   const handleOpenViewer = (scene: Scene) => {
     setViewerScene(scene)
     setSelectedScene(null)
+  }
+
+  const handleCloseViewer = () => {
+    setViewerScene(null)
+    setSelectedMarkerId(null)
   }
 
   return (
@@ -39,29 +46,23 @@ export default function Home() {
         </div>
       ) : (
         <>
-          <Map scenes={scenes} onMarkerClick={handleMarkerClick} />
+          <Map 
+            scenes={scenes} 
+            onMarkerClick={handleMarkerClick}
+            selectedMarkerId={selectedMarkerId}
+          />
           <SceneSidebar
             scene={selectedScene}
             onClose={() => setSelectedScene(null)}
             onOpenViewer={handleOpenViewer}
           />
-          {selectedScene && (
-            <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-30 md:hidden">
-              <button
-                onClick={() => handleOpenViewer(selectedScene)}
-                className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium shadow-lg transition-colors"
-              >
-                Open Viewer
-              </button>
-            </div>
-          )}
         </>
       )}
 
       {viewerScene && (
         <SceneViewerModal
           scene={viewerScene}
-          onClose={() => setViewerScene(null)}
+          onClose={handleCloseViewer}
         />
       )}
     </main>
