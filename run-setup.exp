@@ -1,0 +1,54 @@
+#!/usr/bin/expect -f
+
+set timeout 600
+set server "185.147.127.72"
+set user "root"
+set password "yX1bJ+DH*.,+-e"
+
+# First, copy the setup script to the server
+spawn scp -o StrictHostKeyChecking=no /Users/marat/splatica-map/remote-setup.sh root@185.147.127.72:/tmp/setup.sh
+
+expect {
+    "password:" {
+        send "$password\r"
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+}
+
+expect {
+    eof {}
+    timeout {}
+}
+
+# Now SSH and execute the script
+spawn ssh -o StrictHostKeyChecking=no $user@$server
+
+expect {
+    "password:" {
+        send "$password\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "# " {
+    }
+    "$ " {
+    }
+}
+
+send "bash /tmp/setup.sh\r"
+
+expect {
+    "# " {}
+    "$ " {}
+    timeout {}
+}
+
+# Keep connection open to see output
+interact
+

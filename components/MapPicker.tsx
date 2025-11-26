@@ -46,6 +46,7 @@ export default function MapPicker({
       style: 'mapbox://styles/mapbox/dark-v11',
       center,
       zoom: initialLat && initialLng ? 10 : 2,
+      projection: 'mercator', // Flat map instead of globe
     })
 
     if (initialLat && initialLng) {

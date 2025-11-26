@@ -1,0 +1,75 @@
+#!/usr/bin/expect -f
+
+set timeout 1200
+set server "185.147.127.72"
+set user "root"
+set password "yX1bJ+DH*.,+-e"
+
+spawn ssh -o StrictHostKeyChecking=no $user@$server
+
+expect {
+    "password:" {
+        send "$password\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "# " {
+    }
+    "$ " {
+    }
+}
+
+send "cd /opt/splatica-map\r"
+expect "# "
+
+# Check if node_modules exists, if not install
+send "if [ ! -d node_modules ]; then npm install --no-optional --legacy-peer-deps; fi\r"
+expect {
+    "# " {}
+    timeout {}
+}
+
+# Create .env.local
+send "test -f .env.local || cat > .env.local << 'ENVEOF'\r"
+send "DATABASE_URL=\"file:./prisma/dev.db\"\r"
+send "NEXT_PUBLIC_MAPBOX_TOKEN=\"your_mapbox_token_here\"\r"
+send "ADMIN_PASSWORD=\"change_me_secure_password\"\r"
+send "ENVEOF\r"
+expect "# "
+
+send "npx prisma generate\r"
+expect "# "
+
+send "npx prisma db push\r"
+expect "# "
+
+send "npm run build\r"
+expect {
+    "# " {}
+    timeout {}
+}
+
+send "pm2 stop splatica-map 2>/dev/null || true\r"
+expect "# "
+
+send "pm2 delete splatica-map 2>/dev/null || true\r"
+expect "# "
+
+send "PORT=8080 pm2 start npm --name splatica-map -- start\r"
+expect "# "
+
+send "pm2 save\r"
+expect "# "
+
+send "pm2 status\r"
+expect "# "
+
+send "pm2 logs splatica-map --lines 20\r"
+expect "# "
+
+send "exit\r"
+expect eof
+

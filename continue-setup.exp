@@ -1,0 +1,76 @@
+#!/usr/bin/expect -f
+
+set timeout 600
+set server "185.147.127.72"
+set user "root"
+set password "yX1bJ+DH*.,+-e"
+
+spawn ssh -o StrictHostKeyChecking=no $user@$server
+
+expect {
+    "password:" {
+        send "$password\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "# " {
+    }
+    "$ " {
+    }
+}
+
+# Free up memory
+send "sync && echo 3 > /proc/sys/vm/drop_caches\r"
+expect "# "
+
+# Continue setup
+send "cd /opt/splatica-map\r"
+expect "# "
+
+# Try installing with less memory usage
+send "npm install --no-optional --legacy-peer-deps\r"
+expect {
+    "# " {}
+    timeout { send "\r" }
+}
+
+# Wait a bit
+sleep 2
+
+# Continue with the rest
+send "if [ ! -f .env.local ]; then cat > .env.local << 'ENVEOF'\nDATABASE_URL=\"file:./prisma/dev.db\"\nNEXT_PUBLIC_MAPBOX_TOKEN=\"your_mapbox_token_here\"\nADMIN_PASSWORD=\"change_me_secure_password\"\nENVEOF\nfi\r"
+expect "# "
+
+send "npx prisma generate\r"
+expect "# "
+
+send "npx prisma db push\r"
+expect "# "
+
+send "npm run build\r"
+expect {
+    "# " {}
+    timeout { send "\r" }
+}
+
+send "pm2 stop splatica-map 2>/dev/null || true\r"
+expect "# "
+
+send "pm2 delete splatica-map 2>/dev/null || true\r"
+expect "# "
+
+send "PORT=8080 pm2 start npm --name \"splatica-map\" -- start\r"
+expect "# "
+
+send "pm2 save\r"
+expect "# "
+
+send "pm2 status\r"
+expect "# "
+
+send "exit\r"
+expect eof
+

@@ -4,6 +4,9 @@ import './globals.css'
 export const metadata: Metadata = {
   title: 'Splatica Map',
   description: 'Interactive map of 3D scenes from Splatica',
+  icons: {
+    icon: '/icon.svg',
+  },
 }
 
 export default function RootLayout({

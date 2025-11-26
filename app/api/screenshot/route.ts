@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       })
 
       // Wait a bit more for any dynamic content to render
-      await page.waitForTimeout(2000)
+      await new Promise(resolve => setTimeout(resolve, 2000))
 
       // Take screenshot
       await page.screenshot({

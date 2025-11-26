@@ -1,0 +1,53 @@
+#!/usr/bin/expect -f
+
+set timeout 3600
+set server "185.147.127.72"
+set user "root"
+set password "yX1bJ+DH*.,+-e"
+
+# Copy script
+spawn scp -o StrictHostKeyChecking=no /Users/marat/splatica-map/install-memory-optimized.sh root@185.147.127.72:/tmp/install-opt.sh
+
+expect {
+    "password:" {
+        send "$password\r"
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+}
+
+expect {
+    eof {}
+    timeout {}
+}
+
+# Execute
+spawn ssh -o StrictHostKeyChecking=no $user@$server
+
+expect {
+    "password:" {
+        send "$password\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "# " {
+    }
+    "$ " {
+    }
+}
+
+send "chmod +x /tmp/install-opt.sh && bash /tmp/install-opt.sh\r"
+
+expect {
+    "# " {}
+    "$ " {}
+    timeout {}
+}
+
+interact
+

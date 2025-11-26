@@ -27,18 +27,18 @@ export default function SceneSidebar({ scene, onClose, onOpenViewer }: SceneSide
         onClick={onClose}
       />
 
-      {/* Sidebar / Bottom Sheet */}
+      {/* Sidebar / Bottom Sheet - Scaniverse style */}
       <div
         className={`fixed ${
           scene
             ? 'right-0 md:right-0 bottom-0 md:bottom-auto'
             : '-right-full md:-right-96 bottom-[-100%] md:bottom-auto'
-        } top-auto md:top-0 w-full md:w-96 h-[70vh] md:h-full bg-gray-900/95 backdrop-blur-xl z-50 shadow-2xl transition-all duration-300 ease-out flex flex-col rounded-t-2xl md:rounded-none`}
+        } top-auto md:top-0 w-full md:w-96 h-[70vh] md:h-full bg-black/80 backdrop-blur-2xl z-50 shadow-2xl transition-all duration-500 ease-out flex flex-col rounded-t-3xl md:rounded-none border-l border-white/10 md:border-l`}
       >
-        {/* Close button */}
+        {/* Close button - Scaniverse style */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors z-10 w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-800/50"
+          className="absolute top-4 right-4 text-gray-300 hover:text-white transition-all duration-300 z-10 w-9 h-9 flex items-center justify-center rounded-full hover:bg-white/10 backdrop-blur-sm border border-white/10 hover:border-white/20 hover:scale-110"
         >
           <svg
             className="w-5 h-5"
@@ -59,7 +59,7 @@ export default function SceneSidebar({ scene, onClose, onOpenViewer }: SceneSide
         <div className="flex-1 overflow-y-auto p-6 pt-12">
           {/* Thumbnail */}
           {scene.thumbnailUrl && (
-            <div className="mb-6 rounded-xl overflow-hidden shadow-xl">
+            <div className="mb-6 rounded-2xl overflow-hidden shadow-2xl border border-white/10">
               <img
                 src={scene.thumbnailUrl}
                 alt={scene.title}
@@ -77,16 +77,16 @@ export default function SceneSidebar({ scene, onClose, onOpenViewer }: SceneSide
           )}
 
           {/* Coordinates */}
-          <div className="text-sm text-gray-500 mb-8">
+          <div className="text-sm text-gray-400 mb-8 font-mono">
             <p>
               {scene.lat.toFixed(4)}, {scene.lng.toFixed(4)}
             </p>
           </div>
 
-          {/* Open button with gradient */}
+          {/* Open button with gradient - Scaniverse style */}
           <button
             onClick={handleOpenViewer}
-            className="w-full px-6 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full px-6 py-4 bg-gradient-to-r from-cyan-400 via-blue-500 to-cyan-400 hover:from-cyan-300 hover:via-blue-400 hover:to-cyan-300 text-white rounded-xl font-semibold transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] border border-white/20 hover:border-white/30 backdrop-blur-sm"
           >
             Open in Splatica Viewer
           </button>

@@ -10,9 +10,11 @@ export async function isAdmin(): Promise<boolean> {
 
 export async function setAdminSession() {
   const cookieStore = await cookies()
+  // Only use secure flag if explicitly using HTTPS
+  const isSecure = process.env.NEXT_PUBLIC_USE_HTTPS === 'true'
   cookieStore.set(ADMIN_COOKIE_NAME, 'authenticated', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: isSecure,
     sameSite: 'lax',
     maxAge: 60 * 60 * 24 * 7, // 7 days
   })

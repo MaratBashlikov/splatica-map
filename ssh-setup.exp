@@ -1,0 +1,81 @@
+#!/usr/bin/expect -f
+
+set timeout 300
+set server "185.147.127.72"
+set user "root"
+set password "yX1bJ+DH*.,+-e"
+
+spawn ssh -o StrictHostKeyChecking=no $user@$server
+
+expect {
+    "password:" {
+        send "$password\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "# " {
+        # Connected successfully
+    }
+    "$ " {
+        # Connected successfully
+    }
+}
+
+# Send the setup commands
+send "bash -s < /dev/stdin\r"
+send "set -e\r"
+send "echo '=== Starting Setup ==='\r"
+
+# Check Node.js
+send "if ! command -v node &> /dev/null; then echo 'Installing Node.js...'; curl -fsSL https://deb.nodesource.com/setup_20.x | bash -; apt-get install -y nodejs; fi\r"
+send "echo \"Node.js: \$(node --version)\"\r"
+send "echo \"npm: \$(npm --version)\"\r"
+
+# Install git if needed
+send "if ! command -v git &> /dev/null; then apt-get update && apt-get install -y git; fi\r"
+
+# Install PM2
+send "if ! command -v pm2 &> /dev/null; then npm install -g pm2; fi\r"
+
+# Clone or update repo
+send "REPO_DIR=\"/opt/splatica-map\"\r"
+send "if [ -d \"\$REPO_DIR\" ]; then cd \"\$REPO_DIR\" && git pull; else mkdir -p /opt && cd /opt && git clone https://github.com/MaratBashlikov/splatica-map.git; fi\r"
+send "cd /opt/splatica-map\r"
+
+# Install dependencies
+send "npm install\r"
+
+# Create .env.local if not exists
+send "if [ ! -f .env.local ]; then cat > .env.local << 'ENVEOF'\nDATABASE_URL=\"file:./prisma/dev.db\"\nNEXT_PUBLIC_MAPBOX_TOKEN=\"your_mapbox_token_here\"\nADMIN_PASSWORD=\"change_me_secure_password\"\nENVEOF\nfi\r"
+
+# Setup database
+send "npx prisma generate\r"
+send "npx prisma db push\r"
+
+# Build
+send "npm run build\r"
+
+# Stop existing PM2 process
+send "pm2 stop splatica-map 2>/dev/null || true\r"
+send "pm2 delete splatica-map 2>/dev/null || true\r"
+
+# Start with PM2 on port 8080
+send "PORT=8080 pm2 start npm --name \"splatica-map\" -- start\r"
+send "pm2 save\r"
+send "pm2 startup\r"
+
+send "echo '=== Setup Complete ==='\r"
+send "pm2 status\r"
+
+expect {
+    "# " {}
+    "$ " {}
+    timeout {}
+}
+
+send "exit\r"
+expect eof
+

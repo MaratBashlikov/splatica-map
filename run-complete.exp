@@ -1,0 +1,54 @@
+#!/usr/bin/expect -f
+
+set timeout 2400
+set server "185.147.127.72"
+set user "root"
+set password "yX1bJ+DH*.,+-e"
+
+# Copy script
+spawn scp -o StrictHostKeyChecking=no /Users/marat/splatica-map/complete-install.sh root@185.147.127.72:/tmp/complete-install.sh
+
+expect {
+    "password:" {
+        send "$password\r"
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+}
+
+expect {
+    eof {}
+    timeout {}
+}
+
+# Execute script
+spawn ssh -o StrictHostKeyChecking=no $user@$server
+
+expect {
+    "password:" {
+        send "$password\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "# " {
+    }
+    "$ " {
+    }
+}
+
+send "chmod +x /tmp/complete-install.sh && bash /tmp/complete-install.sh\r"
+
+expect {
+    "# " {}
+    "$ " {}
+    timeout {}
+}
+
+# Keep connection to see output
+interact
+

@@ -244,7 +244,7 @@ export default function NewScenePage() {
                 </button>
               </div>
               <p className="mt-1 text-xs text-gray-400">
-                Leave empty or click "Generate" to create screenshot automatically
+                Leave empty or click &quot;Generate&quot; to create screenshot automatically
               </p>
             </div>
 

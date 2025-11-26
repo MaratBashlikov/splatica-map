@@ -1,0 +1,85 @@
+#!/usr/bin/expect -f
+
+set timeout 1800
+set server "185.147.127.72"
+set user "root"
+set password "yX1bJ+DH*.,+-e"
+
+spawn ssh -o StrictHostKeyChecking=no $user@$server
+
+expect {
+    "password:" {
+        send "$password\r"
+        exp_continue
+    }
+    "yes/no" {
+        send "yes\r"
+        exp_continue
+    }
+    "# " {
+    }
+    "$ " {
+    }
+}
+
+send "cd /opt/splatica-map\r"
+expect "# "
+
+# Clean and reinstall dependencies
+send "rm -rf node_modules package-lock.json\r"
+expect "# "
+
+send "npm install --legacy-peer-deps\r"
+expect {
+    "# " {}
+    timeout { 
+        send "\r"
+        expect "# "
+    }
+}
+
+# Setup Prisma
+send "npx prisma generate\r"
+expect {
+    "# " {}
+    timeout { send "\r"; expect "# " }
+}
+
+send "npx prisma db push\r"
+expect {
+    "# " {}
+    timeout { send "\r"; expect "# " }
+}
+
+# Build
+send "npm run build\r"
+expect {
+    "# " {}
+    timeout { 
+        send "\r"
+        expect "# "
+    }
+}
+
+# Restart PM2
+send "pm2 stop splatica-map\r"
+expect "# "
+
+send "pm2 delete splatica-map\r"
+expect "# "
+
+send "PORT=8080 pm2 start npm --name splatica-map -- start\r"
+expect "# "
+
+send "pm2 save\r"
+expect "# "
+
+send "pm2 logs splatica-map --lines 30 --nostream\r"
+expect "# "
+
+send "pm2 status\r"
+expect "# "
+
+send "exit\r"
+expect eof
+

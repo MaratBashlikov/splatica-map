@@ -40,21 +40,21 @@ export default function SceneViewerModal({
 
   return (
     <div 
-      className={`fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-opacity duration-300 ${
+      className={`fixed inset-0 bg-black/90 backdrop-blur-md z-50 flex items-center justify-center p-4 transition-opacity duration-500 ${
         isVisible ? 'opacity-100' : 'opacity-0'
       }`}
       onClick={handleClose}
     >
       <div 
-        className={`relative w-full h-full max-w-7xl max-h-[90vh] bg-white rounded-2xl overflow-hidden shadow-2xl transition-all duration-300 ${
+        className={`relative w-full h-full max-w-7xl max-h-[90vh] bg-white rounded-3xl overflow-hidden shadow-2xl transition-all duration-500 border-4 border-white/20 ${
           isVisible ? 'scale-100 opacity-100' : 'scale-95 opacity-0'
         }`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close button */}
+        {/* Close button - Scaniverse style */}
         <button
           onClick={handleClose}
-          className="absolute top-4 right-4 z-10 text-gray-600 hover:text-gray-900 transition-colors bg-white/90 hover:bg-white rounded-full p-2 shadow-lg backdrop-blur-sm"
+          className="absolute top-4 right-4 z-10 text-gray-700 hover:text-gray-900 transition-all duration-300 bg-white/95 hover:bg-white rounded-full p-2.5 shadow-xl backdrop-blur-sm border border-gray-200 hover:scale-110 hover:shadow-2xl"
         >
           <svg
             className="w-6 h-6"
@@ -71,14 +71,14 @@ export default function SceneViewerModal({
           </svg>
         </button>
 
-        {/* Iframe or fallback */}
+        {/* Iframe or fallback - Scaniverse style */}
         {iframeError ? (
-          <div className="flex flex-col items-center justify-center h-full bg-gray-50">
+          <div className="flex flex-col items-center justify-center h-full bg-gradient-to-br from-gray-50 to-gray-100">
             <div className="text-center p-8">
-              <p className="text-gray-700 mb-6 text-lg">Unable to load viewer in iframe</p>
+              <p className="text-gray-700 mb-8 text-lg font-medium">Unable to load viewer in iframe</p>
               <button
                 onClick={openInNewTab}
-                className="px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white rounded-xl font-semibold transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105"
+                className="px-10 py-5 bg-gradient-to-r from-cyan-400 via-blue-500 to-cyan-400 hover:from-cyan-300 hover:via-blue-400 hover:to-cyan-300 text-white rounded-xl font-semibold transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105 border border-white/20 hover:border-white/30 backdrop-blur-sm"
               >
                 Open in Splatica
               </button>

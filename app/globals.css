@@ -37,3 +37,62 @@ body {
   display: none !important;
 }
 
+/* Neon marker styles */
+.scene-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.marker-pillar {
+  width: 6px;
+  height: 40px;
+  border-radius: 9999px;
+  background: linear-gradient(
+    to top,
+    rgba(34, 211, 238, 1),
+    rgba(125, 211, 252, 0.7),
+    rgba(125, 211, 252, 0.1)
+  );
+  box-shadow: 0 0 18px rgba(34, 211, 238, 0.8);
+  transition: all 0.2s ease-out;
+}
+
+.scene-marker:hover .marker-pillar {
+  height: 54px;
+  box-shadow: 0 0 24px rgba(34, 211, 238, 1);
+}
+
+.marker-ring {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  border: 1px solid rgba(125, 211, 252, 0.4);
+  filter: blur(1px);
+  opacity: 0;
+  transform: translateX(-50%) scale(0.75);
+  pointer-events: none;
+  bottom: 0;
+  left: 50%;
+  transition: all 0.3s ease-out;
+}
+
+.scene-marker--selected .marker-ring {
+  opacity: 0.4;
+  animation: ring-pulse 2.5s ease-out infinite;
+}
+
+@keyframes ring-pulse {
+  0% {
+    transform: translateX(-50%) scale(0.75);
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateX(-50%) scale(2.5);
+    opacity: 0;
+  }
+}
+
