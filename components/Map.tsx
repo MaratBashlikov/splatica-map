@@ -14,10 +14,17 @@ interface MapProps {
 export default function Map({ scenes, onMarkerClick, selectedMarkerId }: MapProps) {
   const mapContainer = useRef<HTMLDivElement>(null)
   const map = useRef<mapboxgl.Map | null>(null)
-  const markersRef = useRef<mapboxgl.Marker[]>([])
+  const markersRef = useRef<mapboxgl.Marker[]>([]) // Keep for compatibility, but won't be used
   const [isLoaded, setIsLoaded] = useState(false)
   const onMarkerClickRef = useRef(onMarkerClick)
   const selectedMarkerIdRef = useRef(selectedMarkerId)
+  const hoveredMarkerIdRef = useRef<string | null>(null)
+  const iconCacheRef = useRef<Record<string, string>>({}) // Cache for icon data URLs
+  const eventHandlersRef = useRef<{
+    click?: (e: mapboxgl.MapLayerMouseEvent) => void
+    mouseenter?: (e: mapboxgl.MapLayerMouseEvent) => void
+    mouseleave?: () => void
+  }>({})
   
   // Keep refs updated
   useEffect(() => {
@@ -292,7 +299,103 @@ export default function Map({ scenes, onMarkerClick, selectedMarkerId }: MapProp
   }, [])
 
 
-  // Helper function to create individual marker
+  // Helper function to create canvas icon for pillar marker
+  const createPillarIcon = useCallback((
+    state: 'normal' | 'hover' | 'selected',
+    sceneId: string
+  ): string => {
+    const cacheKey = `${sceneId}-${state}`
+    if (iconCacheRef.current[cacheKey]) {
+      return iconCacheRef.current[cacheKey]
+    }
+
+    const size = 64 // Canvas size
+    const canvas = document.createElement('canvas')
+    canvas.width = size
+    canvas.height = size
+    const ctx = canvas.getContext('2d')!
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, size, size)
+    
+    // Pillar dimensions
+    const pillarWidth = 6
+    const pillarHeight = state === 'hover' ? 54 : 40
+    const centerX = size / 2
+    const bottomY = size - 4 // 4px padding from bottom
+    
+    // Create gradient for pillar
+    const gradient = ctx.createLinearGradient(
+      centerX - pillarWidth / 2, bottomY,
+      centerX - pillarWidth / 2, bottomY - pillarHeight
+    )
+    
+    if (state === 'selected') {
+      gradient.addColorStop(0, 'rgba(34, 211, 238, 1)')
+      gradient.addColorStop(0.5, 'rgba(125, 211, 252, 0.9)')
+      gradient.addColorStop(1, 'rgba(125, 211, 252, 0.3)')
+    } else {
+      gradient.addColorStop(0, 'rgba(34, 211, 238, 1)')
+      gradient.addColorStop(0.5, 'rgba(125, 211, 252, 0.7)')
+      gradient.addColorStop(1, 'rgba(125, 211, 252, 0.1)')
+    }
+    
+    // Draw glow shadow (multiple layers for better effect)
+    if (state === 'selected') {
+      // Stronger glow for selected
+      ctx.shadowColor = 'rgba(34, 211, 238, 0.8)'
+      ctx.shadowBlur = 24
+      ctx.shadowOffsetX = 0
+      ctx.shadowOffsetY = 0
+    } else if (state === 'hover') {
+      ctx.shadowColor = 'rgba(34, 211, 238, 0.9)'
+      ctx.shadowBlur = 20
+      ctx.shadowOffsetX = 0
+      ctx.shadowOffsetY = 0
+    } else {
+      ctx.shadowColor = 'rgba(34, 211, 238, 0.6)'
+      ctx.shadowBlur = 18
+      ctx.shadowOffsetX = 0
+      ctx.shadowOffsetY = 0
+    }
+    
+    // Draw pillar (rounded rectangle)
+    ctx.fillStyle = gradient
+    const x = centerX - pillarWidth / 2
+    const y = bottomY - pillarHeight
+    const radius = pillarWidth / 2
+    
+    // Draw rounded rectangle manually
+    ctx.beginPath()
+    ctx.moveTo(x + radius, y)
+    ctx.lineTo(x + pillarWidth - radius, y)
+    ctx.quadraticCurveTo(x + pillarWidth, y, x + pillarWidth, y + radius)
+    ctx.lineTo(x + pillarWidth, y + pillarHeight - radius)
+    ctx.quadraticCurveTo(x + pillarWidth, y + pillarHeight, x + pillarWidth - radius, y + pillarHeight)
+    ctx.lineTo(x + radius, y + pillarHeight)
+    ctx.quadraticCurveTo(x, y + pillarHeight, x, y + pillarHeight - radius)
+    ctx.lineTo(x, y + radius)
+    ctx.quadraticCurveTo(x, y, x + radius, y)
+    ctx.closePath()
+    ctx.fill()
+    
+    // Draw pulsing ring for selected state
+    if (state === 'selected') {
+      ctx.shadowColor = 'rgba(125, 211, 252, 0.4)'
+      ctx.shadowBlur = 8
+      ctx.strokeStyle = 'rgba(125, 211, 252, 0.4)'
+      ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.arc(centerX, bottomY, 16, 0, Math.PI * 2)
+      ctx.stroke()
+    }
+    
+    const dataUrl = canvas.toDataURL()
+    iconCacheRef.current[cacheKey] = dataUrl
+    return dataUrl
+  }, [])
+
+  // Helper function to create individual marker (kept for compatibility, but not used with symbol layers)
   const createIndividualMarker = useCallback((scene: Scene) => {
     // Create marker container - Neon sci-fi style vertical pillar
       const el = document.createElement('div')
@@ -427,23 +530,23 @@ export default function Map({ scenes, onMarkerClick, selectedMarkerId }: MapProp
   }, []) // No dependencies - use refs instead
 
 
-  // Clean marker placement logic - rewritten from scratch
+  // Symbol Layers implementation - no floating markers!
   useEffect(() => {
-    console.log('[Map] Marker placement effect triggered', { 
+    console.log('[Map] Symbol layer effect triggered', { 
       hasMap: !!map.current, 
       isLoaded, 
       scenesCount: scenes.length 
     })
     
     if (!map.current || !isLoaded) {
-      console.log('[Map] Skipping marker creation:', { 
+      console.log('[Map] Skipping symbol layer creation:', { 
         hasMap: !!map.current, 
         isLoaded 
       })
       return
     }
 
-    console.log('[Map] Creating markers for', scenes.length, 'scenes')
+    console.log('[Map] Creating symbol layers for', scenes.length, 'scenes')
 
     // Helper function to parse and validate coordinates
     const parseCoordinates = (scene: Scene): [number, number] | null => {
@@ -507,15 +610,23 @@ export default function Map({ scenes, onMarkerClick, selectedMarkerId }: MapProp
       return [lng, lat]
     }
 
-    // Clear all existing markers
-    console.log('[Map] Clearing', markersRef.current.length, 'existing markers')
+    // Clear existing HTML markers
+    console.log('[Map] Clearing', markersRef.current.length, 'existing HTML markers')
     markersRef.current.forEach((marker) => {
       marker.remove()
     })
       markersRef.current = []
 
-    // Create markers for each scene
-    let createdCount = 0
+    // Remove existing source and layer if they exist
+    if (map.current.getSource('scenes-source')) {
+      if (map.current.getLayer('scenes-layer')) {
+        map.current.removeLayer('scenes-layer')
+      }
+      map.current.removeSource('scenes-source')
+    }
+
+    // Build GeoJSON features from scenes
+    const features: GeoJSON.Feature[] = []
     let skippedCount = 0
     
     scenes.forEach((scene, index) => {
@@ -537,55 +648,226 @@ export default function Map({ scenes, onMarkerClick, selectedMarkerId }: MapProp
       const [lng, lat] = coords
       console.log(`[Map] Scene ${scene.id} coordinates:`, { lng, lat })
 
-      // Create marker element
-          const el = createIndividualMarker(scene)
-      if (!el || !map.current) {
-        console.warn(`[Map] Failed to create marker element for scene ${scene.id}`)
-        skippedCount++
+      features.push({
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: [lng, lat]
+        },
+        properties: {
+          sceneId: scene.id,
+          state: selectedMarkerIdRef.current === scene.id ? 'selected' : 'normal'
+        }
+      })
+    })
+
+    console.log(`[Map] Created ${features.length} GeoJSON features, ${skippedCount} skipped`)
+
+    if (features.length === 0) {
+      console.log('[Map] No valid features to display')
+      return
+    }
+
+    // Load icons for all states
+    const normalIcon = createPillarIcon('normal', 'default')
+    const hoverIcon = createPillarIcon('hover', 'default')
+    const selectedIcon = createPillarIcon('selected', 'default')
+
+    // Helper to load image and add to map
+    const loadAndAddImage = (name: string, dataUrl: string, callback: () => void) => {
+      if (!map.current) return
+      
+      if (map.current.hasImage(name)) {
+        callback()
         return
       }
-          
-      // Create marker with bottom anchor
-      // Bottom anchor means the bottom of the marker (pillar base) will be at the exact coordinates
-          const marker = new mapboxgl.Marker({
-            element: el,
-            anchor: 'bottom',
-          })
-            .setLngLat([lng, lat])
-            .addTo(map.current)
 
-      // Verify position
-      const actualPos = marker.getLngLat()
-      console.log(`[Map] Marker created for scene ${scene.id}:`, {
-        requested: { lng, lat },
-        actual: { lng: actualPos.lng, lat: actualPos.lat },
-        diff: { lng: actualPos.lng - lng, lat: actualPos.lat - lat }
+      map.current.loadImage(dataUrl, (error, image) => {
+        if (error) {
+          console.error(`[Map] Error loading image ${name}:`, error)
+          return
+        }
+        if (image && map.current) {
+          map.current.addImage(name, image)
+          callback()
+        }
+      })
+    }
+
+    // Load all images, then add source and layer
+    let imagesLoaded = 0
+    const totalImages = 3
+    const onImageLoaded = () => {
+      imagesLoaded++
+      if (imagesLoaded === totalImages) {
+        addSourceAndLayer()
+      }
+    }
+
+    const addSourceAndLayer = () => {
+      if (!map.current) return
+
+      // Add GeoJSON source
+      map.current.addSource('scenes-source', {
+        type: 'geojson',
+        data: {
+          type: 'FeatureCollection',
+          features
+        }
       })
 
-      markersRef.current.push(marker)
-      createdCount++
+      // Add symbol layer
+      map.current.addLayer({
+        id: 'scenes-layer',
+        type: 'symbol',
+        source: 'scenes-source',
+        layout: {
+          'icon-image': [
+            'case',
+            ['==', ['get', 'state'], 'selected'],
+            'pillar-selected',
+            'pillar-normal'
+          ],
+          'icon-size': 1,
+          'icon-anchor': 'bottom',
+          'icon-allow-overlap': true,
+          'icon-ignore-placement': true
+        }
       })
 
-    console.log(`[Map] Marker creation complete: ${createdCount} created, ${skippedCount} skipped`)
+      // Attach event handlers
+      attachEventHandlers()
+    }
+
+    const attachEventHandlers = () => {
+      if (!map.current) return
+
+      // Handle click events
+      const handleClick = (e: mapboxgl.MapLayerMouseEvent) => {
+        const feature = e.features?.[0]
+        if (!feature) return
+        
+        const sceneId = feature.properties?.sceneId
+        if (!sceneId) return
+        
+        const scene = scenes.find(s => s.id === sceneId)
+        if (scene) {
+          onMarkerClickRef.current(scene)
+        }
+      }
+
+      // Handle mouse enter (hover)
+      const handleMouseEnter = (e: mapboxgl.MapLayerMouseEvent) => {
+        if (!map.current) return
+        
+        map.current.getCanvas().style.cursor = 'pointer'
+        
+        const feature = e.features?.[0]
+        if (!feature) return
+        
+        const sceneId = feature.properties?.sceneId
+        if (!sceneId || sceneId === selectedMarkerIdRef.current) return
+        
+        hoveredMarkerIdRef.current = sceneId
+        
+        // Update icon to hover state
+        map.current.setLayoutProperty('scenes-layer', 'icon-image', [
+          'case',
+          ['==', ['get', 'state'], 'selected'],
+          'pillar-selected',
+          ['==', ['get', 'sceneId'], sceneId],
+          'pillar-hover',
+          'pillar-normal'
+        ])
+      }
+
+      // Handle mouse leave
+      const handleMouseLeave = () => {
+        if (!map.current) return
+        
+        map.current.getCanvas().style.cursor = ''
+        hoveredMarkerIdRef.current = null
+        
+        // Reset icon to normal/selected
+        map.current.setLayoutProperty('scenes-layer', 'icon-image', [
+          'case',
+          ['==', ['get', 'state'], 'selected'],
+          'pillar-selected',
+          'pillar-normal'
+        ])
+      }
+
+      map.current.on('click', 'scenes-layer', handleClick)
+      map.current.on('mouseenter', 'scenes-layer', handleMouseEnter)
+      map.current.on('mouseleave', 'scenes-layer', handleMouseLeave)
+    }
+
+    // Load all images
+    loadAndAddImage('pillar-normal', normalIcon, onImageLoaded)
+    loadAndAddImage('pillar-hover', hoverIcon, onImageLoaded)
+    loadAndAddImage('pillar-selected', selectedIcon, onImageLoaded)
+
+    console.log(`[Map] Loading ${totalImages} marker icons...`)
 
     // Cleanup function
     return () => {
-      markersRef.current.forEach((marker) => marker.remove())
-      markersRef.current = []
+      if (map.current) {
+        // Remove event handlers
+        const handlers = eventHandlersRef.current
+        if (handlers.click) {
+          map.current.off('click', 'scenes-layer', handlers.click)
+        }
+        if (handlers.mouseenter) {
+          map.current.off('mouseenter', 'scenes-layer', handlers.mouseenter)
+        }
+        if (handlers.mouseleave) {
+          map.current.off('mouseleave', 'scenes-layer', handlers.mouseleave)
+        }
+        
+        if (map.current.getLayer('scenes-layer')) {
+          map.current.removeLayer('scenes-layer')
+        }
+        if (map.current.getSource('scenes-source')) {
+          map.current.removeSource('scenes-source')
+        }
+        
+        // Clear handlers
+        eventHandlersRef.current = {}
+      }
     }
-  }, [scenes, isLoaded, createIndividualMarker])
+  }, [scenes, isLoaded, createPillarIcon])
 
-  // Update all markers when selectedMarkerId changes
+  // Update symbol layer when selectedMarkerId changes
   useEffect(() => {
     if (!map.current || !isLoaded) return
+    if (!map.current.getSource('scenes-source')) return
 
-    markersRef.current.forEach((marker) => {
-      const el = marker.getElement()
-      const updateSelectedState = (el as any).updateSelectedState
-      if (updateSelectedState) {
-        updateSelectedState() // This function uses selectedMarkerIdRef.current
+    const source = map.current.getSource('scenes-source') as mapboxgl.GeoJSONSource
+    const data = source._data as GeoJSON.FeatureCollection
+    
+    // Update properties for all features
+    data.features.forEach((feature) => {
+      if (feature.properties) {
+        feature.properties.state = feature.properties.sceneId === selectedMarkerIdRef.current 
+          ? 'selected' 
+          : 'normal'
       }
     })
+    
+    // Update source data
+    source.setData(data)
+    
+    // Update icon image based on state
+    if (map.current.getLayer('scenes-layer')) {
+      map.current.setLayoutProperty('scenes-layer', 'icon-image', [
+        'case',
+        ['==', ['get', 'state'], 'selected'],
+        'pillar-selected',
+        ['==', ['get', 'sceneId'], hoveredMarkerIdRef.current || ''],
+        'pillar-hover',
+        'pillar-normal'
+      ])
+    }
   }, [selectedMarkerId, isLoaded])
 
   const handleZoomIn = () => {
